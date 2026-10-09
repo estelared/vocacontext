@@ -1,5 +1,5 @@
 // Server-side AI proxy: API keys live in Netlify environment variables, never in the browser.
-// Uses Groq (free tier) when GROQ_API_KEY is set; otherwise Anthropic if ANTHROPIC_API_KEY is set.
+// Uses Groq when GROQ_API_KEY is set; otherwise Claude (your own ANTHROPIC_API_KEY, or Netlify's AI Gateway).
 export default async (req) => {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
   let body;
@@ -29,7 +29,9 @@ export default async (req) => {
     }
 
     if (process.env.ANTHROPIC_API_KEY) {
-      const r = await fetch('https://api.anthropic.com/v1/messages', {
+      // On Netlify, the AI Gateway injects ANTHROPIC_API_KEY + ANTHROPIC_BASE_URL (billed in Netlify credits).
+      const base = (process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com').replace(/\/+$/, '');
+      const r = await fetch(`${base}/v1/messages`, {
         method: 'POST',
         headers: {
           'x-api-key': process.env.ANTHROPIC_API_KEY,
